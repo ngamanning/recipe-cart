@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -11,53 +11,113 @@ import {
   ListItemText,
   Paper,
   TextField,
-  Typography
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+  Chip,
+  CircularProgress
 } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Recipe, Ingredient } from '../../types/recipe';
+import { CreateRecipeDTO, CreateRecipeIngredientDTO, Category } from '../../types/recipe';
+import { categoryApi, recipeApi } from '../../services/api-service';
 
 interface RecipeFormProps {
-  onSave: (recipe: Recipe) => void;
+  onSave: (recipe: any) => void;
   onCancel: () => void;
 }
 
 const RecipeForm: React.FC<RecipeFormProps> = ({ onSave, onCancel }) => {
-  const [recipe, setRecipe] = useState<Recipe>({
+  const [recipe, setRecipe] = useState<CreateRecipeDTO>({
     name: '',
+    description: '',
+    prepTime: null,
+    cookTime: null,
+    servings: null,
+    instructions: '',
+    imageUrl: '',
+    userId: 1, // Default user ID, would normally come from auth context
     ingredients: [],
-    description: ''
+    categoryIds: []
   });
 
-  const [newIngredient, setNewIngredient] = useState<Omit<Ingredient, 'id'>>({
+  const [newIngredient, setNewIngredient] = useState<CreateRecipeIngredientDTO>({
     name: '',
-    quantity: '',
-    unit: ''
+    quantity: 0,
+    unit: '',
+    notes: '',
+    category: ''
   });
 
-  const handleRecipeNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await categoryApi.getAll();
+        setCategories(data);
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+        setError('Failed to load categories. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleRecipeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setRecipe(prevRecipe => ({
       ...prevRecipe,
-      name: e.target.value
+      [name]: value
     }));
   }, []);
 
-  const handleRecipeDescriptionChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNumberChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const numberValue = value === '' ? null : parseInt(value, 10);
     setRecipe(prevRecipe => ({
       ...prevRecipe,
-      description: e.target.value
+      [name]: numberValue
     }));
   }, []);
 
   const handleIngredientChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setNewIngredient(prevIngredient => ({
-      ...prevIngredient,
-      [name]: value
-    }));
+    
+    if (name === 'quantity') {
+      const numberValue = parseFloat(value) || 0;
+      setNewIngredient(prev => ({
+        ...prev,
+        [name]: numberValue
+      }));
+    } else {
+      setNewIngredient(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   }, []);
+
+  const handleCategoryChange = (event: SelectChangeEvent<number[]>) => {
+    setRecipe(prevRecipe => ({
+      ...prevRecipe,
+      categoryIds: event.target.value as number[]
+    }));
+  };
 
   const addIngredient = useCallback(() => {
     if (newIngredient.name.trim() === '') return;
@@ -66,47 +126,63 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSave, onCancel }) => {
       ...prevRecipe,
       ingredients: [
         ...prevRecipe.ingredients,
-        {
-          id: Date.now().toString(),
-          ...newIngredient
-        }
+        { ...newIngredient }
       ]
     }));
 
     // Reset the new ingredient form
     setNewIngredient({
       name: '',
-      quantity: '',
-      unit: ''
+      quantity: 0,
+      unit: '',
+      notes: '',
+      category: ''
     });
   }, [newIngredient]);
 
-  const removeIngredient = useCallback((id: string) => {
+  const removeIngredient = useCallback((index: number) => {
     setRecipe(prevRecipe => ({
       ...prevRecipe,
-      ingredients: prevRecipe.ingredients.filter(ingredient => ingredient.id !== id)
+      ingredients: prevRecipe.ingredients.filter((_, i) => i !== index)
     }));
   }, []);
 
-  const handleSaveRecipe = useCallback(() => {
+  const handleSaveRecipe = useCallback(async () => {
     if (recipe.name.trim() === '' || recipe.ingredients.length === 0) {
       alert('Please add a recipe name and at least one ingredient');
       return;
     }
 
-    onSave(recipe);
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      const savedRecipe = await recipeApi.create(recipe);
+      onSave(savedRecipe);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('Error saving recipe:', err);
+      setError(`Failed to save recipe: ${errorMessage}`);
+      alert(`Failed to save recipe: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [recipe, onSave]);
 
-  const handleCancel = () => {
-    onCancel();
-  };
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Paper elevation={3} sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <IconButton 
           aria-label="back" 
-          onClick={handleCancel} 
+          onClick={onCancel} 
           sx={{ mr: 1 }}
         >
           <ArrowBackIcon />
@@ -116,35 +192,127 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSave, onCancel }) => {
         </Typography>
       </Box>
 
+      {error && (
+        <Box sx={{ mb: 2 }}>
+          <Typography color="error">{error}</Typography>
+        </Box>
+      )}
+
       <TextField
         label="Recipe Name"
+        name="name"
         variant="outlined"
         fullWidth
         value={recipe.name}
-        onChange={handleRecipeNameChange}
+        onChange={handleRecipeChange}
         margin="normal"
+        required
       />
 
       <TextField
-        label="Recipe Description (Optional)"
+        label="Recipe Description"
+        name="description"
         variant="outlined"
         fullWidth
         multiline
         rows={2}
-        value={recipe.description}
-        onChange={handleRecipeDescriptionChange}
+        value={recipe.description || ''}
+        onChange={handleRecipeChange}
         margin="normal"
       />
 
-      <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
+      <Grid container spacing={2} sx={{ mt: 1 }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <TextField
+            label="Prep Time (minutes)"
+            name="prepTime"
+            type="number"
+            variant="outlined"
+            fullWidth
+            value={recipe.prepTime || ''}
+            onChange={handleNumberChange}
+            inputProps={{ min: 0 }}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <TextField
+            label="Cook Time (minutes)"
+            name="cookTime"
+            type="number"
+            variant="outlined"
+            fullWidth
+            value={recipe.cookTime || ''}
+            onChange={handleNumberChange}
+            inputProps={{ min: 0 }}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <TextField
+            label="Servings"
+            name="servings"
+            type="number"
+            variant="outlined"
+            fullWidth
+            value={recipe.servings || ''}
+            onChange={handleNumberChange}
+            inputProps={{ min: 1 }}
+          />
+        </Grid>
+      </Grid>
+
+      <TextField
+        label="Instructions"
+        name="instructions"
+        variant="outlined"
+        fullWidth
+        multiline
+        rows={4}
+        value={recipe.instructions || ''}
+        onChange={handleRecipeChange}
+        margin="normal"
+      />
+
+      <TextField
+        label="Image URL"
+        name="imageUrl"
+        variant="outlined"
+        fullWidth
+        value={recipe.imageUrl || ''}
+        onChange={handleRecipeChange}
+        margin="normal"
+      />
+
+      <FormControl fullWidth margin="normal">
+        <InputLabel>Categories</InputLabel>
+        <Select
+          multiple
+          value={recipe.categoryIds}
+          onChange={handleCategoryChange}
+          renderValue={(selected) => (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {selected.map((value) => {
+                const category = categories.find(cat => cat.categoryId === value);
+                return (
+                  <Chip key={value} label={category ? category.name : value} />
+                );
+              })}
+            </Box>
+          )}
+        >
+          {categories.map((category) => (
+            <MenuItem key={category.categoryId} value={category.categoryId}>
+              {category.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
         Add Ingredients
       </Typography>
 
       <Grid container spacing={2}>
-        <Grid size={{
-            xs:12,
-            sm: 5
-        }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <TextField
             label="Ingredient Name"
             name="name"
@@ -152,38 +320,42 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSave, onCancel }) => {
             fullWidth
             value={newIngredient.name}
             onChange={handleIngredientChange}
+            required
           />
         </Grid>
-        <Grid size={{
-            xs:6,
-            sm: 2
-        }}>
+        <Grid size={{ xs: 6, sm: 2 }}>
           <TextField
             label="Quantity"
             name="quantity"
+            type="number"
             variant="outlined"
             fullWidth
-            value={newIngredient.quantity}
+            value={newIngredient.quantity || ''}
             onChange={handleIngredientChange}
+            inputProps={{ step: "0.01", min: 0 }}
           />
         </Grid>
-        <Grid size={{
-            xs:6,
-            sm: 3
-        }}>
+        <Grid size={{ xs: 6, sm: 2 }}>
           <TextField
             label="Unit"
             name="unit"
             variant="outlined"
             fullWidth
-            value={newIngredient.unit}
+            value={newIngredient.unit || ''}
             onChange={handleIngredientChange}
           />
         </Grid>
-        <Grid size={{
-            xs:12,
-            sm: 2
-        }}>
+        <Grid size={{ xs: 12, sm: 2 }}>
+          <TextField
+            label="Category"
+            name="category"
+            variant="outlined"
+            fullWidth
+            value={newIngredient.category || ''}
+            onChange={handleIngredientChange}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 2 }}>
           <Button
             variant="contained"
             color="primary"
@@ -191,11 +363,23 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSave, onCancel }) => {
             startIcon={<AddCircleIcon />}
             fullWidth
             sx={{ height: '100%' }}
+            disabled={!newIngredient.name}
           >
             Add
           </Button>
         </Grid>
       </Grid>
+
+      <TextField
+        label="Notes"
+        name="notes"
+        variant="outlined"
+        fullWidth
+        value={newIngredient.notes || ''}
+        onChange={handleIngredientChange}
+        margin="normal"
+        placeholder="Optional notes about this ingredient"
+      />
 
       {recipe.ingredients.length > 0 && (
         <Card variant="outlined" sx={{ mt: 3 }}>
@@ -204,25 +388,24 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSave, onCancel }) => {
               Ingredients:
             </Typography>
             <List>
-              {recipe.ingredients.map((ingredient) => (
+              {recipe.ingredients.map((ingredient, index) => (
                 <ListItem
-                  key={ingredient.id}
+                  key={index}
                   secondaryAction={
                     <IconButton 
                       edge="end" 
                       aria-label="delete"
-                      onClick={() => removeIngredient(ingredient.id)}
+                      onClick={() => removeIngredient(index)}
                     >
                       <DeleteIcon />
                     </IconButton>
                   }
                 >
                   <ListItemText
-                    primary={ingredient.name}
+                    primary={`${ingredient.name}${ingredient.category ? ` (${ingredient.category})` : ''}`}
                     secondary={ingredient.quantity && ingredient.unit 
-                      ? `${ingredient.quantity} ${ingredient.unit}`
-                      : ingredient.quantity || ingredient.unit || ''
-                    }
+                      ? `${ingredient.quantity} ${ingredient.unit}${ingredient.notes ? ` - ${ingredient.notes}` : ''}`
+                      : ingredient.notes || ''}
                   />
                 </ListItem>
               ))}
@@ -234,18 +417,19 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSave, onCancel }) => {
       <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
         <Button
           variant="outlined"
-          onClick={handleCancel}
+          onClick={onCancel}
+          disabled={isSubmitting}
         >
           Cancel
         </Button>
         <Button
           variant="contained"
           color="secondary"
-          startIcon={<SaveIcon />}
+          startIcon={isSubmitting ? <CircularProgress size={24} /> : <SaveIcon />}
           onClick={handleSaveRecipe}
-          disabled={recipe.name.trim() === '' || recipe.ingredients.length === 0}
+          disabled={isSubmitting || recipe.name.trim() === '' || recipe.ingredients.length === 0}
         >
-          Save Recipe
+          {isSubmitting ? 'Saving...' : 'Save Recipe'}
         </Button>
       </Box>
     </Paper>
