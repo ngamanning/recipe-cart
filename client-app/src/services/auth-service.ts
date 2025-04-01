@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
+import config from '../config';
 
 // Types
 export interface LoginRequest {
@@ -21,7 +22,7 @@ export interface AuthResponse {
 
 // Create an axios instance with default config
 const authApi = axios.create({
-  baseURL: 'http://localhost:5207/api/auth',
+  baseURL: config.apiBaseUrl,
   headers: {
     'Content-Type': 'application/json'
   }
