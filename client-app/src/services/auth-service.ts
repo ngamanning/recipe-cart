@@ -22,7 +22,7 @@ export interface AuthResponse {
 
 // Create an axios instance with default config
 const authApi = axios.create({
-  baseURL: config.apiBaseUrl,
+  baseURL: config.apiBaseUrl + '/auth',
   headers: {
     'Content-Type': 'application/json'
   }

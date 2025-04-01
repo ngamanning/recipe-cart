@@ -21,7 +21,7 @@ import AddIcon from '@mui/icons-material/Add';
 import FoodBankIcon from '@mui/icons-material/FoodBank';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { Recipe } from '../types/recipe';
-import { recipeApi } from '../services/api-service';
+import { recipeApi } from '../services/api/recipes';
 import { useAuth } from '../contexts/AuthContext';
 
 const HomePage: React.FC = () => {

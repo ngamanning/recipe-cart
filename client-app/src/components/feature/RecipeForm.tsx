@@ -29,7 +29,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { CreateRecipeDTO, CreateRecipeIngredientDTO, Category } from '../../types/recipe';
-import { categoryApi, recipeApi } from '../../services/api-service';
+import { categoryApi, recipeApi } from '../../services/api/recipes';
 import { useAuth } from '../../contexts/AuthContext';
 
 const RecipeForm: React.FC = () => {

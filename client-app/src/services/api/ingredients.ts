@@ -1,21 +1,20 @@
 import axios from 'axios';
-import { 
-  Recipe, 
-  CreateRecipeDTO, 
+import {   
   Category, 
   MealPlan, 
   ShoppingList 
-} from '../types/recipe';
-import authService from './auth-service';
-import config from '../config';
+} from '../../types/recipe';
+import authService from '../auth-service';
+import config from '../../config';
 
 // Create an axios instance with default config
 const api = axios.create({
-  baseURL: config.apiBaseUrl,
+  baseURL: config.apiBaseUrl + '/ingredients',
   headers: {
     'Content-Type': 'application/json'
   }
 });
+
 
 // Add authorization header with JWT token
 api.interceptors.request.use(
@@ -47,33 +46,7 @@ api.interceptors.response.use(
   }
 );
 
-// Recipe API methods
-export const recipeApi = {
-  // Get all recipes
-  getAll: async (): Promise<Recipe[]> => {
-    return api.get('/recipes');
-  },
 
-  // Get recipe by ID
-  getById: async (id: number): Promise<Recipe> => {
-    return api.get(`/recipes/${id}`);
-  },
-
-  // Create a new recipe
-  create: async (recipe: CreateRecipeDTO): Promise<Recipe> => {
-    return api.post('/recipes', recipe);
-  },
-
-  // Update an existing recipe
-  update: async (id: number, recipe: Partial<CreateRecipeDTO>): Promise<Recipe> => {
-    return api.put(`/recipes/${id}`, recipe);
-  },
-
-  // Delete a recipe
-  delete: async (id: number): Promise<void> => {
-    return api.delete(`/recipes/${id}`);
-  }
-};
 
 // Category API methods
 export const categoryApi = {
