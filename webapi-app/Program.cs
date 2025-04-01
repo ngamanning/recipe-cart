@@ -43,16 +43,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add CORS
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp",
-        builder => builder
-            .WithOrigins("http://localhost:3000") // Your React app URL
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials());
+    options.AddPolicy("AllowReactApp", corsBuilder =>
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            // Only allow localhost:3000 in development
+            corsBuilder
+                .WithOrigins("http://localhost:3000")
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        }
+        else
+        {
+            // Allow your production URL in non-development environments
+            corsBuilder
+                .WithOrigins("https://lively-flower-040f3051e.azurestaticapps.net")
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        }
+    });
 });
+
 
 var app = builder.Build();
 

@@ -1,0 +1,16 @@
+{
+    "routes": [
+      {
+        "route": "/api/*",
+        "rewrite": "https://recipe-cart-api-d6bue8bdb9chagc8.centralus-01.azurewebsites.net/api/*"
+      },
+      {
+        "route": "/*",
+        "rewrite": "/index.html",
+        "statusCode": 200
+      }
+    ],
+    "navigationFallback": {
+      "rewrite": "/index.html"
+    }
+  }
