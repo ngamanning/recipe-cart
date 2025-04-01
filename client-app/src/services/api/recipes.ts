@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { 
   Recipe, 
-  CreateRecipeDTO 
+  CreateRecipeDTO, 
+  Category
 } from '../../types/recipe';
 import authService from '../auth-service';
 import config from '../../config';
@@ -45,7 +46,7 @@ api.interceptors.response.use(
 );
 
 // Recipe API methods
-export const recipeServiceApi = {
+export const recipeApi = {
   // Get all recipes
   getAll: async (): Promise<Recipe[]> => {
     return api.get('/recipes');
@@ -69,6 +70,19 @@ export const recipeServiceApi = {
   // Delete a recipe
   delete: async (id: number): Promise<void> => {
     return api.delete(`/recipes/${id}`);
+  }
+};
+
+// Category API methods
+export const categoryApi = {
+  // Get all categories
+  getAll: async (): Promise<Category[]> => {
+    return api.get('/categories');
+  },
+
+  // Create a new category
+  create: async (name: string): Promise<Category> => {
+    return api.post('/categories', { name });
   }
 };
  

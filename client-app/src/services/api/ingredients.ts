@@ -1,6 +1,5 @@
 import axios from 'axios';
-import {   
-  Category, 
+import {  
   MealPlan, 
   ShoppingList 
 } from '../../types/recipe';
@@ -45,21 +44,6 @@ api.interceptors.response.use(
     return Promise.reject(new Error(errorMessage));
   }
 );
-
-
-
-// Category API methods
-export const categoryApi = {
-  // Get all categories
-  getAll: async (): Promise<Category[]> => {
-    return api.get('/categories');
-  },
-
-  // Create a new category
-  create: async (name: string): Promise<Category> => {
-    return api.post('/categories', { name });
-  }
-};
 
 // Meal plan API methods
 export const mealPlanApi = {
