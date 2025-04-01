@@ -1,9 +1,9 @@
-﻿// In RecipeService.cs
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using RecipeAPI.Data.Entities;
 using RecipeAPI.Models;
 using RecipeAPI.Services;
+
 namespace RecipeAPI.Services
 {
     public class RecipeService : IRecipeService
@@ -15,6 +15,21 @@ namespace RecipeAPI.Services
         {
             _context = context;
             _mapper = mapper;
+        }
+
+        public async Task<List<RecipeDTO>> GetAllRecipesAsync()
+        {
+            // Get all recipes with related data
+            var recipes = await _context.Recipes
+                .Include(r => r.RecipeIngredients)
+                    .ThenInclude(ri => ri.Ingredient)
+                .Include(r => r.RecipeIngredients)
+                    .ThenInclude(ri => ri.Unit)
+                .Include(r => r.Category)
+                .ToListAsync();
+
+            // Map to DTOs and return
+            return _mapper.Map<List<RecipeDTO>>(recipes);
         }
 
         public async Task<RecipeDTO> CreateRecipeAsync(CreateRecipeDTO createRecipeDto)
@@ -29,9 +44,9 @@ namespace RecipeAPI.Services
                 Servings = createRecipeDto.Servings,
                 Instructions = createRecipeDto.Instructions,
                 ImageUrl = createRecipeDto.ImageUrl,
-                UserId = 1,
+                UserId = createRecipeDto.UserId ?? 1,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow                
+                UpdatedAt = DateTime.UtcNow
             };
 
             // Add recipe to context

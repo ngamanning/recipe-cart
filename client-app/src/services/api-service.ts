@@ -6,6 +6,7 @@ import {
   MealPlan, 
   ShoppingList 
 } from '../types/recipe';
+import authService from './auth-service';
 
 // Create an axios instance with default config
 const api = axios.create({
@@ -15,10 +16,31 @@ const api = axios.create({
   }
 });
 
+// Add authorization header with JWT token
+api.interceptors.request.use(
+  config => {
+    const token = authService.getToken();
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  error => {
+    return Promise.reject(error);
+  }
+);
+
 // Add a response interceptor for global error handling
 api.interceptors.response.use(
   response => response.data,
   error => {
+    // Handle expired token or unauthorized access
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      authService.logout();
+      window.location.href = '/login';
+      return Promise.reject(new Error('Your session has expired. Please login again.'));
+    }
+    
     const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred';
     return Promise.reject(new Error(errorMessage));
   }
