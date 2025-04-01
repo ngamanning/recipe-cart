@@ -6,5 +6,6 @@ namespace RecipeAPI.Services
     {
         Task<RecipeDTO> CreateRecipeAsync(CreateRecipeDTO createRecipeDto);
         Task<RecipeDTO> GetRecipeByIdAsync(int id);
+        Task<List<RecipeDTO>> GetAllRecipesAsync();
     }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -19,16 +20,17 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import FoodBankIcon from '@mui/icons-material/FoodBank';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import RecipeForm from '../components/feature/RecipeForm';
 import { Recipe } from '../types/recipe';
 import { recipeApi } from '../services/api-service';
+import { useAuth } from '../contexts/AuthContext';
 
 const HomePage: React.FC = () => {
-  const [isRecipeFormOpen, setIsRecipeFormOpen] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchRecipes();
@@ -51,35 +53,12 @@ const HomePage: React.FC = () => {
   };
 
   const handleOpenRecipeForm = () => {
-    setIsRecipeFormOpen(true);
-  };
-
-  const handleCloseRecipeForm = () => {
-    setIsRecipeFormOpen(false);
-  };
-
-  const handleSaveRecipe = (newRecipe: Recipe) => {
-    setRecipes([...recipes, newRecipe]);
-    setIsRecipeFormOpen(false);
-    setSuccessMessage('Recipe saved successfully!');
+    navigate('/create-recipe');
   };
 
   const handleCloseSuccessMessage = () => {
     setSuccessMessage(null);
   };
-
-  if (isRecipeFormOpen) {
-    return (
-      <Container maxWidth="md">
-        <Box sx={{ my: 4 }}>
-          <RecipeForm 
-            onSave={handleSaveRecipe} 
-            onCancel={handleCloseRecipeForm} 
-          />
-        </Box>
-      </Container>
-    );
-  }
 
   return (
     <Container maxWidth="md">
@@ -87,7 +66,7 @@ const HomePage: React.FC = () => {
         <Typography variant="h4" component="h1" gutterBottom align="center" 
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 4 }}>
           <FoodBankIcon sx={{ mr: 1, fontSize: 35 }} />
-          My Recipe Collection
+          {user ? `${user.username}'s Recipe Collection` : 'My Recipe Collection'}
         </Typography>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
